@@ -9,9 +9,7 @@ import "firebase/firestore";
 var config = {
   apiKey: "AIzaSyBN0uExYyx8PlWI5wDZq6DA5wJdwP-RhhQ",
   authDomain: "timecard-76a8f.firebaseapp.com",
-  // databaseURL: "https://timecard-76a8f.firebaseio.com",
   projectId: "timecard-76a8f",
-  // storageBucket: "timecard-76a8f.appspot.com",
   messagingSenderId: "1023634309611"
 };
 firebase.initializeApp(config);
@@ -21,10 +19,12 @@ class App extends Component {
     super(props);
     this.state = {
       init: null,
+      timer: null,
       work_idx: 0,
       user: null,
       email: "",
       pass: "",
+      error: null,
       works: [],
     };
 
@@ -45,13 +45,13 @@ class App extends Component {
           var db = firebase.firestore();
           db.collection("users").doc(user.uid).collection("works").orderBy("date", "desc").onSnapshot((col) => {
             var works = col.docs.map((doc) => {
-              console.log(doc.data());
               return doc.data();
             });
-            console.log(works);
-              // console.log(moment.unix(data.date).format("YYYY-MM-DD HH:mm:ss"));
-              // console.log(this.work_states[data.work_idx]);
-            this.setState({works: works});
+            var idx = 0;
+            if(works !== null && works.length !== 0) {
+              idx = (works[0].work_idx + 1) % 2;
+            }
+            this.setState({works: works, work_idx: idx});
           });
           this.setState({init:true, user: user});
         }
@@ -59,6 +59,14 @@ class App extends Component {
         console.log("no user");
         this.setState({init:true, user: null});
       }
+    });
+
+    this.intervalTimer = setInterval(() => this.update(), 1000);
+  }
+
+  update() {
+    this.setState({
+      timer: moment().valueOf(),
     });
   }
 
@@ -68,7 +76,7 @@ class App extends Component {
 
     db.collection("users").doc(user.uid).collection("works").add({
       work_idx: idx,
-      date: moment().unix(),
+      date: moment().valueOf(),
     })
     .then((docRef) => {
       console.log("db document writtern with id: ", docRef);
@@ -76,12 +84,6 @@ class App extends Component {
     .catch((error) => {
       console.error("db error adding document: ", error);
     });
-
-    if(idx === 0) {
-      this.setState({work_idx: 1})
-    } else {
-      this.setState({work_idx: 0})
-    }
   }
 
   changeEmailText(e) {
@@ -96,9 +98,9 @@ class App extends Component {
     this.setState({init: null});
     var email = this.state.email;
     var pass = this.state.pass;
-    firebase.auth().signInWithEmailAndPassword(email, pass).catch(function(error) {
+    firebase.auth().signInWithEmailAndPassword(email, pass).catch((error) => {
       console.log("signInWithEmailAndPassword error");
-      console.log(error);
+      this.setState({init: true, error: error});
     });
   }
 
@@ -124,28 +126,44 @@ class App extends Component {
     }
 
     if(this.state.user) {
-      console.log(this.state.works);
-
       var worklist = () => {
-        return this.state.works.map((elem) => (
-          <li>
-            {this.work_states[elem.work_idx]}
-             / 
-            {moment.unix(elem.date).format("YYYY-MM-DD HH:mm:ss")}
-          </li>
-        ))
+        if(this.state.works !== null && this.state.works.length !== 0) {
+          var clsLiNames = ["App-li-shusha", "App-li-taisha"];
+          var clsSpanNames = ["App-span-shusha", "App-span-taisha"];
+          return(<ul className="App-ul">
+            {this.state.works.map((elem) => (
+              <li className={clsLiNames[elem.work_idx]}>
+                <span className={clsSpanNames[elem.work_idx]}>{this.work_states[elem.work_idx]}</span>
+                <div className="App-time">{moment(elem.date).format("HH:mm:ss")}</div>
+                <div className="App-date">{moment(elem.date).format("YYYY/MM/DD ddd")}</div>
+              </li>
+            ))}
+          </ul>)
+        } else {
+          return(<>Loading...</>)
+        }
+      }
+
+      var buttonContent = () => {
+        if(this.state.timer !== null) {
+          return(
+            <button className={btnClassName} onClick={() => this.change_work_state(this.state.work_idx)}>
+              {this.work_states[this.state.work_idx]}
+              <div className="App-time">{moment(this.state.timer).format("HH:mm:ss")}</div>
+              <div className="App-date">{moment(this.state.timer).format("YYYY/MM/DD ddd")}</div>
+            </button>
+          )
+        }
       }
 
       return (
         <div className="App">
         <header className="App-header">
-          <button className={btnClassName} onClick={() => this.change_work_state(this.state.work_idx)}>
-          {this.work_states[this.state.work_idx]}
-          </button>
+          {buttonContent()}
 
-          <ul>{worklist()}</ul>
+          {worklist()}
 
-          <button className={btnClassName} onClick={() => this.signOut()} >
+          <button className="App-defaultButton"  onClick={() => this.signOut()} >
           Sign-Out
           </button>
         </header>
@@ -156,14 +174,31 @@ class App extends Component {
     return (
       <div className="App">
       <header className="App-header">
-      <input type="text" value={this.state.email} onChange={(e) => this.changeEmailText(e)} />
-      <input type="text" value={this.state.pass} onChange={(e) => this.changePassText(e)} />
-      <button className={btnClassName} onClick={() => this.signIn()} >
+      <Error error={this.state.error} />
+      <input className="App-textbox" placeholder="E-mail" type="email" 
+       value={this.state.email} onChange={(e) => this.changeEmailText(e)} />
+      <input className="App-textbox" type="password" placeholder="Password"
+       value={this.state.pass} onChange={(e) => this.changePassText(e)} />
+      <button className="App-signinButton" onClick={() => this.signIn()} >
       Sign-In
       </button>
       </header>
       </div>
     );
+  }
+}
+
+const Error = ({error}) => {
+  if(error !== null && error !== undefined) {
+    return (
+      <div className="App-error">
+        {error.message}
+      </div>
+    )
+  } else {
+    return (
+      <></>
+    )
   }
 }
 
