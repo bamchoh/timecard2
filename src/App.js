@@ -2,6 +2,9 @@ import moment from "moment";
 
 import React, { Component } from 'react';
 // import logo from './logo.svg';
+// import timer_img from './timer.jpg';
+import logo_png from './logo.png';
+
 import './App.css';
 import firebase from "firebase";
 import "firebase/firestore";
@@ -14,6 +17,52 @@ var config = {
 };
 firebase.initializeApp(config);
 
+const Time = ({elem, edit}) => {
+  if(edit) {
+    return(<>
+      <input className="App-datetime" type="datetime-local" value={moment(elem.date).format("YYYY-MM-DDTHH:mm")} />
+    </>)
+  } else {
+    return(<>
+    <div className="App-time">{moment(elem.date).format("HH:mm:ss")}</div>
+    <div className="App-date">{moment(elem.date).format("YYYY/MM/DD ddd")}</div>
+    </>)
+  }
+}
+
+const Footer = ({onClick, onEdit, onDone, onCancel, edit}) => {
+  var editButton = () => {
+    if(edit) {
+      return(<>
+        <button className="App-footerButton"  onClick={onDone} >
+          Done
+        </button>
+        <button className="App-footerButton"  onClick={onCancel} >
+          Cancel
+        </button>
+      </>)
+    } else {
+      return(<>
+        <button className="App-footerButton"  onClick={onEdit} >
+          Edit
+        </button>
+      </>)
+    }
+  }
+  return (
+    <>
+      <footer className="App-footer" >
+        <button className="App-footerButton"  onClick={onClick} >
+          Sign-Out
+        </button>
+        {editButton()}
+      </footer>
+      <div className="App-spacer-for-footer">
+      </div>
+    </>
+  );
+}
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -25,6 +74,7 @@ class App extends Component {
       email: "",
       pass: "",
       error: null,
+      edit: false,
       works: [],
     };
 
@@ -43,11 +93,11 @@ class App extends Component {
         } else {
           console.log("alraday verified email");
           var db = firebase.firestore();
-          db.collection("users").doc(user.uid).collection("works").orderBy("date", "desc").onSnapshot((col) => {
-            var works = col.docs.map((doc) => {
-              return doc.data();
-            });
+          db.collection("users").doc(user.uid).collection("works").orderBy("date", "desc").limit(10).onSnapshot((col) => {
             var idx = 0;
+            var works = col.docs.map((doc) => {
+              return {id:doc.id, ...doc.data()};
+            });
             if(works !== null && works.length !== 0) {
               idx = (works[0].work_idx + 1) % 2;
             }
@@ -113,11 +163,23 @@ class App extends Component {
     });
   }
 
+  editTime() {
+    this.setState({edit: true});
+  }
+
+  doneEdit() {
+    this.setState({edit: false});
+  }
+
+  cancelEdit() {
+    this.setState({edit: false});
+  }
+
   render() {
     var btnClassName = this.btn_classes[this.state.work_idx]
     if(this.state.init == null) {
       return (
-        <div className="App">
+        <div className="Body">
         <header className="App-header">
           Loading...
         </header>
@@ -132,10 +194,9 @@ class App extends Component {
           var clsSpanNames = ["App-span-shusha", "App-span-taisha"];
           return(<ul className="App-ul">
             {this.state.works.map((elem) => (
-              <li className={clsLiNames[elem.work_idx]}>
+              <li key={elem.id} className={clsLiNames[elem.work_idx]}>
                 <span className={clsSpanNames[elem.work_idx]}>{this.work_states[elem.work_idx]}</span>
-                <div className="App-time">{moment(elem.date).format("HH:mm:ss")}</div>
-                <div className="App-date">{moment(elem.date).format("YYYY/MM/DD ddd")}</div>
+                <Time elem={elem} edit={this.state.edit}/>
               </li>
             ))}
           </ul>)
@@ -157,16 +218,18 @@ class App extends Component {
       }
 
       return (
-        <div className="App">
+        <div className="Body">
         <header className="App-header">
           {buttonContent()}
 
           {worklist()}
-
-          <button className="App-defaultButton"  onClick={() => this.signOut()} >
-          Sign-Out
-          </button>
         </header>
+        <Footer
+          onClick={() => this.signOut()}
+          onEdit={() => this.editTime()}
+          onDone={() => this.doneEdit()}
+          onCancel={() => this.cancelEdit()}
+          edit={this.state.edit} />
         </div>
       )
     }
@@ -174,14 +237,18 @@ class App extends Component {
     return (
       <div className="App">
       <header className="App-header">
-      <Error error={this.state.error} />
-      <input className="App-textbox" placeholder="E-mail" type="email" 
-       value={this.state.email} onChange={(e) => this.changeEmailText(e)} />
-      <input className="App-textbox" type="password" placeholder="Password"
-       value={this.state.pass} onChange={(e) => this.changePassText(e)} />
-      <button className="App-signinButton" onClick={() => this.signIn()} >
-      Sign-In
-      </button>
+      <div className="App-SignIn-Container">
+        <img className="App-Logo" src={logo_png} alt="logo" />
+        <Error error={this.state.error} />
+        <input className="App-textbox" placeholder="E-mail" type="email" 
+         value={this.state.email} onChange={(e) => this.changeEmailText(e)} />
+        <input className="App-textbox" type="password" placeholder="Password"
+         value={this.state.pass} onChange={(e) => this.changePassText(e)} />
+        <div>
+        <input className="App-signinButton" type="button" onClick={() => this.signIn()}
+         value="Sign-In" />
+        </div>
+      </div>
       </header>
       </div>
     );
