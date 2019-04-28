@@ -25,7 +25,6 @@ input[type=datetime-local]::-webkit-clear-button {
 	text-align: center;
 	min-height: 100vh;
 	display: flex;
-	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 	font-size: calc(10px + 2vmin);
@@ -36,51 +35,68 @@ input[type=datetime-local]::-webkit-clear-button {
 	width: 80%;
 }
 
+.App-Main-Container {
+	max-width: 500px;
+	margin: auto;
+}
+
 .App-SignIn-Container {
 	background-color: #F4E7D3;
 	padding: 1em 1em 0.5em 1em;
-}
-
-.App-span-shusha {
-	padding-right: 0.25em;
-	color: #FD5F00;
-}
-
-.App-span-taisha {
-	padding-right: 0.25em;
-	color: #76B39D;
+	max-width: 500px;
+	margin: auto;
 }
 
 .App-ul {
-	margin-left: -2em;
-	align-items: left;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-around;
+	flex-direction: column-reverse;
+}
+
+.App-Couple {
+	margin: 5px;
+	display: flex;
+	width: 100%;
+	padding: 0.25em;
+	justify-content: center;
+}
+
+.App-TextLight {
+	color: #F9F8EB;
 }
 
 .App-li-shusha {
-	text-align: left;
 	font-size: 24px;
-	border: solid 1px #FD5F00;
-	border-left: solid 6px #FD5F00;
-	margin-bottom: 3px;
-	padding: 0.25em;
-	list-style-type: none!important;
+	padding: 0.5em;
+	background-color: #FD5F00;
+	text-align: center;
+	min-width: 120px;
+}
+
+.App-li-empty {
+	font-size: 24px;
+	background-color: #76B39D;
+	opacity: 0.3;
+	padding: 0.5em;
+	min-width: 120px;
 }
 
 .App-li-taisha {
-	text-align: left;
 	font-size: 24px;
-	border: solid 1px #76B39D;
-	border-left: solid 6px #76B39D;
-	margin-bottom: 3px;
-	padding: 0.25em;
-	list-style-type: none!important;
+	padding: 0.5em;
+	background-color: #76B39D;
+	text-align: center;
+	min-width: 120px;
 }
 
 .App-time {
+	color: #F9F8EB;
 	font-size: 32px;
 }
 
 .App-date {
+	color: #F9F8EB;
 	font-size: 16px;
 }
 .App-error {
@@ -108,6 +124,17 @@ input[type=datetime-local]::-webkit-clear-button {
 	width: 100%;
 }
 
+.App-signupButton {
+	font-size: 16px;
+	margin-top: 1em;
+	margin-left: 1em;
+	padding: 0.5em;
+	border-style:none;
+	border: solid 1px #FD5F00;
+	background-color: #F4E7D3;
+	color: #FD5F00;
+}
+
 .App-signinButton {
 	font-size: 16px;
 	margin-top: 1em;
@@ -128,6 +155,7 @@ input[type=datetime-local]::-webkit-clear-button {
 }
 
 .App-shusha {
+	width: 100%;
 	background-color: #FD5F00;
 	color: #F9F8EB;
 	font-size: 72px;
@@ -135,8 +163,10 @@ input[type=datetime-local]::-webkit-clear-button {
 	padding: 0.5em 1em;
 	text-decoration: none;
 	border-style: none;
-	border-bottom: solid 4px #627295;
-	border-radius: 3px;
+
+	margin-top: 10px;
+	margin-bottom: 20px;
+	box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.4);
 
 	-moz-border-radius: 5px;
 	-webkit-border-radius: 5px;
@@ -144,6 +174,7 @@ input[type=datetime-local]::-webkit-clear-button {
 }
 
 .App-taisha {
+	width: 100%;
 	background-color: #76B39D;
 	color: #F9F8EB;
 	font-size: 72px;
@@ -151,8 +182,11 @@ input[type=datetime-local]::-webkit-clear-button {
 	padding: 0.5em 1em;
 	text-decoration: none;
 	border-style: none;
-	border-bottom: solid 4px #627295;
 	border-radius: 3px;
+
+	margin-top: 10px;
+	margin-bottom: 20px;
+	box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.4);
 
 	-moz-border-radius: 5px;
 	-webkit-border-radius: 5px;

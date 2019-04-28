@@ -1,8 +1,6 @@
 import moment from "moment";
 
-import React, { Component } from 'react';
-// import logo from './logo.svg';
-// import timer_img from './timer.jpg';
+import React, { Component, useState} from 'react';
 import logo_png from './logo.png';
 
 import './App.css';
@@ -17,69 +15,13 @@ var config = {
 };
 firebase.initializeApp(config);
 
-const Time = ({elem, edit}) => {
-  if(edit) {
-    return(<>
-      <input className="App-datetime" type="datetime-local" value={moment(elem.date).format("YYYY-MM-DDTHH:mm")} />
-    </>)
-  } else {
-    return(<>
-    <div className="App-time">{moment(elem.date).format("HH:mm:ss")}</div>
-    <div className="App-date">{moment(elem.date).format("YYYY/MM/DD ddd")}</div>
-    </>)
-  }
-}
-
-const Footer = ({onClick, onEdit, onDone, onCancel, edit}) => {
-  var editButton = () => {
-    if(edit) {
-      return(<>
-        <button className="App-footerButton"  onClick={onDone} >
-          Done
-        </button>
-        <button className="App-footerButton"  onClick={onCancel} >
-          Cancel
-        </button>
-      </>)
-    } else {
-      return(<>
-        <button className="App-footerButton"  onClick={onEdit} >
-          Edit
-        </button>
-      </>)
-    }
-  }
-  return (
-    <>
-      <footer className="App-footer" >
-        <button className="App-footerButton"  onClick={onClick} >
-          Sign-Out
-        </button>
-        {editButton()}
-      </footer>
-      <div className="App-spacer-for-footer">
-      </div>
-    </>
-  );
-}
-
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
       init: null,
-      timer: null,
-      work_idx: 0,
       user: null,
-      email: "",
-      pass: "",
-      error: null,
-      edit: false,
-      works: [],
     };
-
-    this.work_states = ["出社", "退社"];
-    this.btn_classes = ["App-shusha", "App-taisha"];
 
     firebase.auth().onAuthStateChanged((user) => {
       if (user) {
@@ -91,18 +33,6 @@ class App extends Component {
             console.log(error);
           });
         } else {
-          console.log("alraday verified email");
-          var db = firebase.firestore();
-          db.collection("users").doc(user.uid).collection("works").orderBy("date", "desc").limit(10).onSnapshot((col) => {
-            var idx = 0;
-            var works = col.docs.map((doc) => {
-              return {id:doc.id, ...doc.data()};
-            });
-            if(works !== null && works.length !== 0) {
-              idx = (works[0].work_idx + 1) % 2;
-            }
-            this.setState({works: works, work_idx: idx});
-          });
           this.setState({init:true, user: user});
         }
       } else {
@@ -111,50 +41,16 @@ class App extends Component {
       }
     });
 
-    this.intervalTimer = setInterval(() => this.update(), 1000);
   }
 
-  update() {
-    this.setState({
-      timer: moment().valueOf(),
-    });
-  }
-
-  change_work_state(idx) {
-    var db = firebase.firestore();
-    var user = this.state.user;
-
-    db.collection("users").doc(user.uid).collection("works").add({
-      work_idx: idx,
-      date: moment().valueOf(),
-    })
-    .then((docRef) => {
-      console.log("db document writtern with id: ", docRef);
-    })
-    .catch((error) => {
-      console.error("db error adding document: ", error);
-    });
-  }
-
-  changeEmailText(e) {
-    this.setState({email: e.target.value});
-  }
-
-  changePassText(e) {
-    this.setState({pass: e.target.value});
-  }
-
-  signIn() {
+  signIn = (e) => {
     this.setState({init: null});
-    var email = this.state.email;
-    var pass = this.state.pass;
-    firebase.auth().signInWithEmailAndPassword(email, pass).catch((error) => {
-      console.log("signInWithEmailAndPassword error");
-      this.setState({init: true, error: error});
-    });
   }
 
-  signOut() {
+  signUp = (e) => {
+  }
+
+  signOut = () => {
     firebase.auth().signOut().then(function() {
       console.log("succeeded sign-out");
     }).catch(function(error) {
@@ -163,96 +59,351 @@ class App extends Component {
     });
   }
 
-  editTime() {
-    this.setState({edit: true});
-  }
-
-  doneEdit() {
-    this.setState({edit: false});
-  }
-
-  cancelEdit() {
-    this.setState({edit: false});
-  }
-
   render() {
-    var btnClassName = this.btn_classes[this.state.work_idx]
     if(this.state.init == null) {
-      return (
-        <div className="Body">
-        <header className="App-header">
-          Loading...
-        </header>
-        </div>
-      )
+      return(<LoadingPage />)
     }
 
     if(this.state.user) {
-      var worklist = () => {
-        if(this.state.works !== null && this.state.works.length !== 0) {
-          var clsLiNames = ["App-li-shusha", "App-li-taisha"];
-          var clsSpanNames = ["App-span-shusha", "App-span-taisha"];
-          return(<ul className="App-ul">
-            {this.state.works.map((elem) => (
-              <li key={elem.id} className={clsLiNames[elem.work_idx]}>
-                <span className={clsSpanNames[elem.work_idx]}>{this.work_states[elem.work_idx]}</span>
-                <Time elem={elem} edit={this.state.edit}/>
-              </li>
-            ))}
-          </ul>)
-        } else {
-          return(<>Loading...</>)
-        }
-      }
-
-      var buttonContent = () => {
-        if(this.state.timer !== null) {
-          return(
-            <button className={btnClassName} onClick={() => this.change_work_state(this.state.work_idx)}>
-              {this.work_states[this.state.work_idx]}
-              <div className="App-time">{moment(this.state.timer).format("HH:mm:ss")}</div>
-              <div className="App-date">{moment(this.state.timer).format("YYYY/MM/DD ddd")}</div>
-            </button>
-          )
-        }
-      }
-
-      return (
-        <div className="Body">
-        <header className="App-header">
-          {buttonContent()}
-
-          {worklist()}
-        </header>
-        <Footer
-          onClick={() => this.signOut()}
-          onEdit={() => this.editTime()}
-          onDone={() => this.doneEdit()}
-          onCancel={() => this.cancelEdit()}
-          edit={this.state.edit} />
-        </div>
-      )
+      return(<TimeCardPage
+        user={this.state.user}
+        handleSignOut={this.signOut}
+        />)
     }
 
     return (
-      <div className="App">
-      <header className="App-header">
-      <div className="App-SignIn-Container">
-        <img className="App-Logo" src={logo_png} alt="logo" />
-        <Error error={this.state.error} />
-        <input className="App-textbox" placeholder="E-mail" type="email" 
-         value={this.state.email} onChange={(e) => this.changeEmailText(e)} />
-        <input className="App-textbox" type="password" placeholder="Password"
-         value={this.state.pass} onChange={(e) => this.changePassText(e)} />
-        <div>
-        <input className="App-signinButton" type="button" onClick={() => this.signIn()}
-         value="Sign-In" />
-        </div>
-      </div>
-      </header>
-      </div>
+      <LoginDialog
+        handleLogIn={this.signIn}
+        handleSignUp={this.signUp} />
     );
   }
+}
+
+class TimeCardPage extends Component {
+  state = {
+    edit: false,
+    work_idx: 0,
+  }
+
+  work_states = ["出社", "退社"];
+
+  editTime = () => {
+    this.setState({edit: true});
+  }
+
+  doneEdit = () => {
+    this.setState({edit: false});
+  }
+
+  cancelEdit = () => {
+    this.setState({edit: false});
+  }
+
+  setWorkIdx = (idx) => {
+    this.setState({work_idx: idx});
+  }
+
+  render() {
+    return (
+      <div className="Body">
+      <header className="App-header">
+        <div className="App-Main-Container">
+          <StampButton idx={this.state.work_idx}
+           work_states={this.work_states}
+           handleClick={() => this.change_work_state(this.state.work_idx)}
+           user={this.props.user} />
+
+          <WorkStamps edit={this.state.edit}
+           user={this.props.user}
+           setWorkIdx={this.setWorkIdx}
+           work_states={this.work_states} />
+        </div>
+      </header>
+      <Footer
+        onClick={this.props.handleSignOut}
+        onEdit={this.editTime}
+        onDone={this.doneEdit}
+        onCancel={this.cancelEdit}
+        edit={this.state.edit} />
+      </div>
+    )
+  }
+}
+
+class StampButton extends Component {
+  state = {
+    timer: null,
+  }
+
+  constructor(props) {
+    super(props)
+
+    setInterval(this.update, 1000);
+  }
+
+  update = () => {
+    this.setState({timer: moment().valueOf()})
+  }
+
+  stamp = () => {
+    var db = firebase.firestore();
+    var user = this.props.user;
+
+    db.collection("users").doc(user.uid).collection("works").add({
+      work_idx: this.props.idx,
+      date: moment().valueOf(),
+    })
+    .then((docRef) => {
+      // console.log("db document writtern with id: ", docRef);
+    })
+    .catch((error) => {
+      console.error("db error adding document: ", error);
+    });
+  }
+
+  render() {
+    var {timer, idx, work_states} = this.props;
+    if(timer === null) {
+      return(<></>)
+    }
+
+    var btn_classes = ["App-shusha", "App-taisha"];
+    var btnClassName = btn_classes[idx]
+    return(
+      <button className={btnClassName} onClick={this.stamp}>
+        {work_states[idx]}
+        <div className="App-time">{moment(timer).format("HH:mm:ss")}</div>
+        <div className="App-date">{moment(timer).format("YYYY/MM/DD ddd")}</div>
+      </button>
+    )
+  }
+}
+
+class WorkStamps extends Component {
+  state = {
+    works: [],
+  }
+
+  constructor(props) {
+    super(props);
+
+    var db = firebase.firestore();
+    var user = this.props.user;
+    db.collection("users").doc(user.uid).collection("works").orderBy("date", "desc").limit(10).onSnapshot((col) => {
+      var idx = 0;
+      var prev = null;
+      var temp = [];
+      col.docs.reverse().forEach((doc) => {
+        var data = doc.data();
+        if(data.work_idx === 1) {
+          var work = {start: { ...prev }, end: { ...data }};
+          prev = null;
+          temp.push(work);
+        } else {
+          prev = { ...data };
+        }
+      });
+
+      if(prev!==null) {
+        idx = 1;
+        temp.push({start: prev, end: null})
+      } else {
+        idx = 0;
+      }
+
+      this.setState({works: temp});
+      this.props.setWorkIdx(idx);
+    });
+  }
+
+  render() {
+    var {edit, work_states} = this.props;
+    if(this.state.works === null || this.state.works.length === 0) {
+      return(<>Loading...</>)
+    }
+
+    return(<div className="App-ul">
+      {this.state.works.map((elem) => {
+        return(<div className="App-Couple">
+          <WorkTime clsName={"App-li-shusha"} idx={0} elem={elem} edit={edit} work_states={work_states} />
+          <WorkTime clsName={"App-li-taisha"} idx={1} elem={elem} edit={edit} work_states={work_states} />
+        </div>)
+      })}
+    </div>)
+  }
+}
+
+const Time = ({elem, edit}) => {
+  if(edit) {
+    return(<>
+      <input className="App-datetime" type="datetime-local" value={moment(elem.date).format("YYYY-MM-DDTHH:mm")} />
+    </>)
+  } else {
+    return(<>
+    <div className="App-time">{moment(elem.date).format("HH:mm")}</div>
+    <div className="App-date">{moment(elem.date).format("YYYY/MM/DD ddd")}</div>
+    </>)
+  }
+}
+
+const WorkTime = ({clsName, idx, elem, edit, work_states}) => {
+  if(elem === undefined || elem === null) {
+    return(<></>)
+  }
+
+  var info = null
+  if(idx === 0) {
+    if(elem.start === undefined || elem.start === null) {
+      return(<div className="App-li-empty">未出社</div>)
+    } else {
+      info = elem.start;
+    }
+  } else {
+    if(elem.end === undefined || elem.end === null) {
+      return(<div className="App-li-empty">未退社</div>)
+    } else {
+      info = elem.end;
+    }
+  }
+
+  return(
+    <div className={clsName}>
+      <span className="App-TextLight">{work_states[idx]}</span>
+      <Time elem={info} edit={edit}/>
+    </div>
+  )
+}
+
+const LoadingPage = (props) => {
+  return (
+    <div className="Body">
+    <header className="App-header">
+      Loading...
+    </header>
+    </div>
+  )
+}
+
+const LoginDialog = ({
+  handleError,
+  handleLogIn,
+  handleSignUp
+}) => {
+  const [email, setEmail] = useState("");
+  const [pass, setPassword] = useState("");
+  const [errMsg, setError] = useState(null);
+  const [proceeding, setProceeding] = useState(false);
+
+  const changeEmailText = (e) => {
+    setEmail(e.target.value);
+  }
+
+  const changePassText = (e) => {
+    setPassword(e.target.value);
+  }
+
+  const logIn = (e) => {
+    firebase.auth().signInWithEmailAndPassword(email, pass).catch((error) => {
+      console.log("signInWithEmailAndPassword error");
+      setError(error);
+      setProceeding(false);
+    });
+    setProceeding(true);
+  }
+
+  if(proceeding) {
+    return(<LoadingPage />)
+  }
+
+  return(
+    <div className="App">
+    <header className="App-header">
+    <div className="App-SignIn-Container">
+      <img className="App-Logo" src={logo_png} alt="logo" />
+      <Error error={errMsg} />
+      <EmailTextBox value={email} handleChange={changeEmailText} />
+      <PassTextBox value={pass} handleChange={changePassText} />
+      <div>
+        <LogInButton text="Log-In" handleClick={logIn} />
+        <SignUpButton text="Sign-Up" handleClick={handleSignUp} />
+      </div>
+    </div>
+    </header>
+    </div>
+  )
+}
+
+const EmailTextBox = ({text, handleChange}) => {
+  return(
+    <input className="App-textbox" type="email" placeholder="E-mail"
+     value={text}
+     onChange={e => handleChange(e)} />
+  )
+}
+
+const PassTextBox = ({text, handleChange}) => {
+  return(
+    <input className="App-textbox" type="password" placeholder="Password"
+     value={text}
+     onChange={e => handleChange(e)} />
+  )
+}
+
+const LogInButton = ({text, handleClick}) => {
+  return(
+    <input className="App-signinButton" type="button"
+     value={text}
+     onClick={e => handleClick(e)} />
+  )
+}
+
+const SignUpButton = ({text, handleClick}) => {
+  return(
+    <input className="App-signupButton" type="button" value={text} onClick={e => handleClick(e)} />
+  )
+}
+
+const FooterButton = ({text, handleClick}) => {
+  return(
+    <input className="App-footerButton" type="button" value={text} onClick={e => handleClick(e)} />
+  )
+}
+
+const EditButtonGroup = ({handleOnDone, handleOnCancel, handleOnEdit, edit}) => {
+  return(<>
+    <Visibility condition={true} value={edit}>
+      <FooterButton text="Done" handleClick={handleOnDone} />
+      <FooterButton text="Cancel" handleClick={handleOnCancel} />
+    </Visibility>
+    <Visibility condition={false} value={edit}>
+      <FooterButton text="Edit" handleClick={handleOnEdit} />
+    </Visibility>
+  </>)
+}
+
+const Visibility = ({condition, value, children}) => {
+  if(condition !== value) {
+    return(<></>)
+  }
+
+  return(<>{children}</>)
+}
+
+const Footer = ({onClick, onEdit, onDone, onCancel, edit}) => {
+  return (
+    <>
+      <footer className="App-footer" >
+        <FooterButton text="Log-Out" handleClick={onClick} />
+        <EditButtonGroup
+          handleOnDone={onDone}
+          handleOnCancel={onCancel}
+          handleOnEdit={onEdit}
+          edit={edit} />
+      </footer>
+      <div className="App-spacer-for-footer">
+      </div>
+    </>
+  );
 }
 
 const Error = ({error}) => {
