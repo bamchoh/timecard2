@@ -4,6 +4,12 @@ input[type=datetime-local]::-webkit-clear-button {
 	display: none;
 }
 
+input[type=datetime-local] {
+	border: none;
+	background-color: #F9F8EB;
+}
+
+
 .App {
 	background-color: #F9F8EB;
 	text-align: center;
@@ -25,7 +31,6 @@ input[type=datetime-local]::-webkit-clear-button {
 	text-align: center;
 	min-height: 100vh;
 	display: flex;
-	align-items: center;
 	justify-content: center;
 	font-size: calc(10px + 2vmin);
 	color: #05004E;
@@ -55,10 +60,8 @@ input[type=datetime-local]::-webkit-clear-button {
 }
 
 .App-Couple {
-	margin: 5px;
+	margin: 5px 0px;
 	display: flex;
-	width: 100%;
-	padding: 0.25em;
 	justify-content: center;
 }
 
@@ -171,6 +174,8 @@ input[type=datetime-local]::-webkit-clear-button {
 	-moz-border-radius: 5px;
 	-webkit-border-radius: 5px;
 	border-radius: 5px;
+
+	max-width: 300px;
 }
 
 .App-taisha {
@@ -191,6 +196,8 @@ input[type=datetime-local]::-webkit-clear-button {
 	-moz-border-radius: 5px;
 	-webkit-border-radius: 5px;
 	border-radius: 5px;
+
+	max-width: 300px;
 }
 
 .App-footer {

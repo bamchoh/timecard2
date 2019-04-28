@@ -83,25 +83,121 @@ class TimeCardPage extends Component {
   state = {
     edit: false,
     work_idx: 0,
+    works: [],
+    modified: [],
+  }
+
+  constructor(props) {
+    super(props);
+
+    var db = firebase.firestore();
+    var user = this.props.user;
+    db.collection("users").doc(user.uid).collection("works").orderBy("date", "desc").limit(10).onSnapshot((col) => {
+      var idx = 0;
+      var prev = null;
+      var temp = [];
+      col.docs.reverse().forEach((doc) => {
+        var data = doc.data();
+        if(data.work_idx === 1) {
+          var work = {start: { ...prev }, end: { id: doc.id, ...data }};
+          prev = null;
+          temp.push(work);
+        } else {
+          prev = { id: doc.id, ...data };
+        }
+      });
+
+      if(prev!==null) {
+        idx = 1;
+        temp.push({start: prev, end: null})
+      } else {
+        idx = 0;
+      }
+
+      console.log(temp);
+      this.setState({works: temp, work_idx: idx});
+    });
   }
 
   work_states = ["出社", "退社"];
 
   editTime = () => {
-    this.setState({edit: true});
+    var modified = this.state.works.slice()
+    this.setState({edit: true, modified: modified});
   }
 
   doneEdit = () => {
-    this.setState({edit: false});
+    var modified = [];
+    this.state.modified.forEach((elem, i) => {
+      var original = this.state.works[i]
+      if((original.start !== null && original.start.date !== elem.start.date) ||
+        (original.end !== null && original.end.date !== elem.end.date)) {
+        modified.push(elem);
+      }
+    })
+
+    var db = firebase.firestore();
+    var batch = db.batch();
+    var user = this.props.user;
+
+    modified.forEach((elem) => {
+      var ref = null;
+      if(elem.start !== null) {
+        ref = db.collection("users").doc(user.uid).collection("works").doc(elem.start.id)
+        batch.set(ref, {work_idx: elem.start.work_idx, date: elem.start.date})
+      }
+
+      if(elem.end !== null) {
+        ref = db.collection("users").doc(user.uid).collection("works").doc(elem.end.id)
+        batch.set(ref, {work_idx: elem.end.work_idx, date: elem.end.date})
+      }
+    });
+
+    batch.commit().then(() => {
+      console.log("committed");
+    })
+
+    this.setState({edit: false}); //, works: modified});
   }
 
   cancelEdit = () => {
     this.setState({edit: false});
   }
 
-  setWorkIdx = (idx) => {
-    this.setState({work_idx: idx});
+  newState = (ki, wi, newdate) => {
+    if(isNaN(newdate)) {
+      return;
+    }
+
+    var newWorks = this.state.modified.map((elem, i) => {
+      if(ki === i) {
+        if(wi === 0) {
+          return {
+            ...elem,
+            start: {
+              ...elem.start,
+              date: newdate,
+            },
+          }
+        }
+
+        if(wi === 1) {
+          return {
+            ...elem,
+            end: {
+              ...elem.end,
+              date: newdate,
+            }
+          }
+        }
+      }
+      return {
+        ...elem
+      }
+    })
+    this.setState({modified: newWorks});
   }
+
 
   render() {
     return (
@@ -111,11 +207,16 @@ class TimeCardPage extends Component {
           <StampButton idx={this.state.work_idx}
            work_states={this.work_states}
            handleClick={() => this.change_work_state(this.state.work_idx)}
-           user={this.props.user} />
+           user={this.props.user}
+           edit={this.state.edit} />
 
           <WorkStamps edit={this.state.edit}
            user={this.props.user}
-           setWorkIdx={this.setWorkIdx}
+           works={this.state.works}
+           modified={this.state.modified}
+           handleChange={(e, ki, wi) => {
+              this.newState(ki, wi, moment(e.target.value).valueOf());
+           }}
            work_states={this.work_states} />
         </div>
       </header>
@@ -127,6 +228,33 @@ class TimeCardPage extends Component {
         edit={this.state.edit} />
       </div>
     )
+  }
+}
+
+class WorkStamps extends Component {
+  render() {
+    var {edit, work_states, works, modified, handleChange} = this.props;
+    if(works === null || works.length === 0) {
+      return(<>Loading...</>)
+    }
+
+    var list = null;
+    if(edit) {
+      list = modified;
+    } else {
+      list = works;
+    }
+
+    return(<div className="App-ul">
+      {list.map((elem, i) => {
+        return(<div className="App-Couple" key={i}>
+          <WorkTime clsName={"App-li-shusha"} idx={0} elem={elem} edit={edit} work_states={work_states}
+            handleChange={(e) => handleChange(e, i, 0)}/>
+          <WorkTime clsName={"App-li-taisha"} idx={1} elem={elem} edit={edit} work_states={work_states}
+            handleChange={(e) => handleChange(e, i, 1)}/>
+        </div>)
+      })}
+    </div>)
   }
 }
 
@@ -162,8 +290,8 @@ class StampButton extends Component {
   }
 
   render() {
-    var {timer, idx, work_states} = this.props;
-    if(timer === null) {
+    var {timer, idx, work_states, edit} = this.props;
+    if(timer === null || edit === true) {
       return(<></>)
     }
 
@@ -179,65 +307,16 @@ class StampButton extends Component {
   }
 }
 
-class WorkStamps extends Component {
-  state = {
-    works: [],
-  }
 
-  constructor(props) {
-    super(props);
-
-    var db = firebase.firestore();
-    var user = this.props.user;
-    db.collection("users").doc(user.uid).collection("works").orderBy("date", "desc").limit(10).onSnapshot((col) => {
-      var idx = 0;
-      var prev = null;
-      var temp = [];
-      col.docs.reverse().forEach((doc) => {
-        var data = doc.data();
-        if(data.work_idx === 1) {
-          var work = {start: { ...prev }, end: { ...data }};
-          prev = null;
-          temp.push(work);
-        } else {
-          prev = { ...data };
-        }
-      });
-
-      if(prev!==null) {
-        idx = 1;
-        temp.push({start: prev, end: null})
-      } else {
-        idx = 0;
-      }
-
-      this.setState({works: temp});
-      this.props.setWorkIdx(idx);
-    });
-  }
-
-  render() {
-    var {edit, work_states} = this.props;
-    if(this.state.works === null || this.state.works.length === 0) {
-      return(<>Loading...</>)
-    }
-
-    return(<div className="App-ul">
-      {this.state.works.map((elem) => {
-        return(<div className="App-Couple">
-          <WorkTime clsName={"App-li-shusha"} idx={0} elem={elem} edit={edit} work_states={work_states} />
-          <WorkTime clsName={"App-li-taisha"} idx={1} elem={elem} edit={edit} work_states={work_states} />
-        </div>)
-      })}
-    </div>)
-  }
-}
-
-const Time = ({elem, edit}) => {
+const Time = ({elem, edit, handleChange}) => {
   if(edit) {
-    return(<>
-      <input className="App-datetime" type="datetime-local" value={moment(elem.date).format("YYYY-MM-DDTHH:mm")} />
-    </>)
+    return(
+      <input className="App-datetime" type="datetime-local"
+       value={moment(elem.date).format("YYYY-MM-DDTHH:mm")}
+       min="2019-01-01T00:00"
+       max="2100-12-31T23:59"
+       onChange={handleChange} />
+    )
   } else {
     return(<>
     <div className="App-time">{moment(elem.date).format("HH:mm")}</div>
@@ -246,7 +325,7 @@ const Time = ({elem, edit}) => {
   }
 }
 
-const WorkTime = ({clsName, idx, elem, edit, work_states}) => {
+const WorkTime = ({clsName, idx, elem, edit, work_states, handleChange}) => {
   if(elem === undefined || elem === null) {
     return(<></>)
   }
@@ -268,15 +347,17 @@ const WorkTime = ({clsName, idx, elem, edit, work_states}) => {
 
   return(
     <div className={clsName}>
-      <span className="App-TextLight">{work_states[idx]}</span>
-      <Time elem={info} edit={edit}/>
+      <div className="App-TextLight">{work_states[idx]}</div>
+      <div>
+        <Time elem={info} edit={edit} handleChange={handleChange} />
+      </div>
     </div>
   )
 }
 
 const LoadingPage = (props) => {
   return (
-    <div className="Body">
+    <div className="App">
     <header className="App-header">
       Loading...
     </header>
