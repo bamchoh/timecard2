@@ -20,6 +20,7 @@ input[type=datetime-local] {
 	justify-content: center;
 	font-size: calc(10px + 2vmin);
 	color: #05004E;
+
 	background-image: url('./timer.jpg');
 	background-position: center;
 	background-repeat: no-repeat;
@@ -198,6 +199,22 @@ input[type=datetime-local] {
 	border-radius: 5px;
 
 	max-width: 300px;
+}
+
+.App-Loading {
+	color: #05004E;
+	background-color: rgba(255,255,255,0.9);
+	padding: 1em;
+	width: 100%;
+}
+
+.StampButton-Name {
+	font-size: 24px;
+}
+
+.App-Description {
+	font-size: 24px;
+	text-align: left;
 }
 
 .App-footer {
