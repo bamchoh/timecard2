@@ -203,7 +203,7 @@ class TimeCardPage extends Component {
 
     var db = firebase.firestore();
     var user = this.props.user;
-    db.collection("users").doc(user.uid).collection("works").orderBy("date", "desc").limit(10).onSnapshot((col) => {
+    db.collection("users").doc(user.uid).collection("works").orderBy("date", "desc").onSnapshot((col) => {
       var idx = 0;
       var prev = null;
       var temp = [];
