@@ -250,3 +250,29 @@ input[type=datetime-local] {
 	border: solid 1px #05004E;
 }
 
+.App-hr {
+	margin-top: .4em;
+	font-size: 16px;
+	color: #444;
+	display: flex;
+	align-items: center;
+}
+
+.App-hr:before, .App-hr:after {
+	content: "";
+	flex-grow: 1;
+	height: 1px;
+	background: #888;
+	display: black;
+}
+
+.App-hr:before {
+	margin-right: .4em;
+}
+
+.App-hr:after {
+	margin-left: .4em;
+}
+
+.App-GoogleLoginButton {
+}

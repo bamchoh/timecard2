@@ -2,6 +2,9 @@ import moment from "moment";
 
 import React, { Component, useState} from 'react';
 import logo_png from './logo.png';
+import btn_google_signin from './btn_google_signin_dark_normal_web.png';
+import btn_google_focus from './btn_google_signin_dark_focus_web.png';
+import btn_google_pressed from './btn_google_signin_dark_pressed_web.png';
 
 import './App.css';
 import firebase from "firebase";
@@ -497,6 +500,7 @@ const LoginDialog = ({
   const [pass, setPassword] = useState("");
   const [errMsg, setError] = useState(null);
   const [proceeding, setProceeding] = useState(false);
+  const [googleSigninButtonImage, setSigninButton] = useState(btn_google_signin);
 
   const changeEmailText = (e) => {
     setEmail(e.target.value);
@@ -515,11 +519,31 @@ const LoginDialog = ({
     setProceeding(true);
   }
 
+  const googleSignIn = (e) => {
+    setSigninButton(btn_google_pressed);
+    console.log("google signin");
+    var provider = new firebase.auth.GoogleAuthProvider();
+
+    firebase.auth().signInWithPopup(provider).catch((error) => {
+      console.log("GoogleSignIn");
+      setError(error);
+    })
+  }
+
+  const MouseEnteredOnGoogleSignInButton = (e) => {
+    setSigninButton(btn_google_focus);
+  }
+
+  const MouseLeftOnGoogleSignInButton = (e) => {
+    setSigninButton(btn_google_signin);
+  }
+
   if(proceeding) {
     return(<LoadingPage />)
   }
 
   return(
+    <>
     <div className="App">
     <header className="App-header">
     <div className="App-SignIn-Container">
@@ -531,9 +555,16 @@ const LoginDialog = ({
     <LogInButton text="Log-In" handleClick={logIn} />
     <SignUpButton text="Sign-Up" handleClick={handleSignUp} />
     </div>
+    <div className="App-hr">もしくは</div>
+    <img src={googleSigninButtonImage} className="App-GoogleLoginButton" onClick={googleSignIn} alt="google login button" 
+      onMouseEnter={MouseEnteredOnGoogleSignInButton}
+      onMouseLeave={MouseLeftOnGoogleSignInButton}
+
+    />
     </div>
     </header>
     </div>
+    </>
   )
 }
 
