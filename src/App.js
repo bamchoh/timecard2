@@ -521,10 +521,23 @@ const LoginDialog = ({
 
   const googleSignIn = (e) => {
     setSigninButton(btn_google_pressed);
+
+    firebase.auth().getRedirectResult().then((result) => {
+      if (result.credential) {
+        var token = result.credential.accessToken;
+        console.log("token")
+        console.log(token)
+      }
+      var user = result.user
+      console.log("user")
+      console.log(user)
+    })
+
     console.log("google signin");
     var provider = new firebase.auth.GoogleAuthProvider();
-
-    firebase.auth().signInWithPopup(provider).catch((error) => {
+    provider.addScope('profile')
+    provider.addScope('email')
+    firebase.auth().signInWithRedirect(provider).catch((error) => {
       console.log("GoogleSignIn");
       setError(error);
     })
