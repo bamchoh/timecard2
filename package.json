@@ -27,6 +27,6 @@
     "not op_mini all"
   ],
   "devDependencies": {
-    "tar": "^6.0.2"
+    "tar": "^6.1.2"
   }
 }
