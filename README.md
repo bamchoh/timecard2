@@ -1,3 +1,9 @@
+# Maintenance Status
+
+This repository is archived / no longer actively maintained.
+
+---
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
