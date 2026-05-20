@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@csstools/normalize.css": "^9.0.1",
-    "firebase": "^7.15.1",
+    "firebase": "^10.9.0",
     "moment": "^2.29.4",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
